@@ -14,9 +14,9 @@ A Windows application that uses **Dear ImGui** and **DirectX9** for interactive 
 
 ---
 
-## 🖼️ Screenshot
+## 🖼️ Demo
 <p align="center">
-  <img src="docs/screenshot.png" alt="screenshot" width="700"/>
+  <img src="docs/demo.gif" alt="demo" width="700"/>
 </p>
 
 ---
