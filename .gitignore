@@ -32,7 +32,7 @@
 *.app
 
 .vs/
-imgui/
+include/
 Lab4_ImGui/*
 x64/*
 x86/*

@@ -5,6 +5,7 @@
 #include "GuiManager.h"
 #include "Scene.h"
 #include "Config.h"
+#include "Animation.h"
 
 class App {
 public:
@@ -29,4 +30,9 @@ private:
     GuiManager  m_gui;
     Scene       m_scene;
     AppConfig   m_cfg;
+    ScaleAnimation m_scaleAnim;
+
+    float  m_targetScale = 100.0f;
+    float m_scaleVel = 0.0f;   // spring velocity
+    double m_prevTime = 0.0;
 };

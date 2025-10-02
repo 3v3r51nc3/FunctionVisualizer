@@ -1,5 +1,5 @@
 #include "RendererDX9.h"
-#include "../imgui/imgui_impl_dx9.h"
+#include <imgui/imgui_impl_dx9.h>
 
 bool RendererDX9::Init(HWND hwnd) {
     m_hwnd = hwnd;

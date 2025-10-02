@@ -1,7 +1,8 @@
 #pragma once
 #include "RendererDX9.h"
 #include "Config.h"
-#include "../imgui/imgui.h"
+#include "Scene.h"
+#include <imgui/imgui.h>
 
 class GuiManager {
 public:
@@ -11,5 +12,5 @@ public:
     void BeginFrame();
     void EndFrame(RendererDX9& renderer);
 
-    void ShowMainMenu(AppConfig& cfg);
+    void ShowMainMenu(AppConfig& cfg, Scene& scene);
 };

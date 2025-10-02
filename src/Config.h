@@ -1,5 +1,5 @@
 #pragma once
-#include "../imgui/imgui.h"
+#include <imgui/imgui.h>
 #include <string>
 
 struct AppConfig {
@@ -10,15 +10,18 @@ struct AppConfig {
     ImVec4 quadColor = ImVec4(1, 0, 1, 0.25f);
     ImVec4 quadBorderColor = ImVec4(0, 0, 1, 0.8f);
 
-    std::string funcExpr = "sin(x)";
     int   samples = 500;
     int   gridSpacing = 50;
-    float gridScale = 1.0f;
+    int gridScale = 100;
+
+    static constexpr int kExprBufSize = 512;   // enough space
+    char funcExpr[512] = "x";                  // default expression
 
     // helpers for ImGui::InputText
-    const char* funcExprBuf() const { return funcExpr.c_str(); }
-    char* funcExprBuf() { return const_cast<char*>(funcExpr.c_str()); }
-    int  funcExprBufSize() const { return int(funcExpr.size() + 1); }
+    char* funcExprBuf() { return funcExpr; }
+    const char* funcExprBuf() const { return funcExpr; }
+    int funcExprBufSize() const { return kExprBufSize; }
+
 
     // sync for InputText editing
     // Call before InputText to ensure capacity

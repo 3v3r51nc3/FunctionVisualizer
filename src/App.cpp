@@ -1,6 +1,16 @@
-#include "App.h"
-#include "../imgui/imgui_impl_win32.h"
+﻿#include "App.h"
+#include <imgui/imgui_impl_win32.h>
 #include <tchar.h>
+#include <algorithm>
+
+#ifdef max
+#undef max
+#endif
+
+#ifdef min
+#undef min
+#endif
+
 
 static App* g_app = nullptr;
 
@@ -75,8 +85,49 @@ int App::Run() {
         // Begin GUI frame
         m_gui.BeginFrame();
 
+        double now = ImGui::GetTime();
+        float dt = (m_prevTime == 0.0) ? 0.0f : float(now - m_prevTime);
+        m_prevTime = now;
+        if (dt > 0.1f) dt = 0.1f;
+
+        // convert current scale to exponent form (logarithmic zoom space)
+        auto ToExp = [](float scale) { return std::log(scale / 100.0f); };
+        auto FromExp = [](float exp) { return 100.0f * std::exp(exp); };
+
+        static float zoomExp = ToExp(m_cfg.gridScale);   // current exp
+        static float targetExp = zoomExp;                // target exp
+        static float expVel = 0.0f;                      // velocity in exp space
+
+        // 1. accumulate target from wheel input
+        if (io.MouseWheel != 0.0f) {
+            float step = 0.15f; // 15% per wheel unit
+            targetExp += io.MouseWheel * std::log(1.0f + step);
+        }
+
+        // 2. reset on R
+        if (io.KeysDown['R']) {
+            targetExp = 0.0f; // exp(0) = 1 → scale=100
+        }
+
+        // 3. spring smoothing in exp space
+        const float omega = 12.0f; // responsiveness
+        float x = zoomExp - targetExp;
+        float a = -2.0f * omega * expVel - (omega * omega) * x;
+        expVel += a * dt;
+        zoomExp += expVel * dt;
+
+        // 4. convert back to scale, clamp
+        m_cfg.gridScale = std::clamp(FromExp(zoomExp), 10.0f, 500.0f);
+
+        // snap when close
+        if (fabs(m_cfg.gridScale - FromExp(targetExp)) < 0.01f && fabs(expVel) < 0.01f) {
+            zoomExp = targetExp;
+            expVel = 0.0f;
+            m_cfg.gridScale = FromExp(targetExp);
+        }
+        
         // GUI panels
-        m_gui.ShowMainMenu(m_cfg);
+        m_gui.ShowMainMenu(m_cfg, m_scene);
 
         // Sizes
         ImVec2 winSize = ImGui::GetIO().DisplaySize;
