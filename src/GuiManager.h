@@ -1,6 +1,5 @@
 #pragma once
 #include "RendererDX9.h"
-#include "Config.h"
 #include "Scene.h"
 #include <imgui/imgui.h>
 

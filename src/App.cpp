@@ -69,7 +69,7 @@ int App::Run() {
     (void)font;
 
     // Load config
-    m_cfg.Load("config.ini");
+    m_cfg.Load("config.ini", m_scene);
 
     // Main loop
     MSG msg = {};
@@ -148,6 +148,9 @@ int App::Run() {
             // Function curve
             m_scene.DrawFunction(center, winSize, m_cfg);
 
+            if (m_cfg.fourierFunction) {
+                m_scene.DrawFourierTransform(center, winSize, m_cfg);
+            }
             // ImGui draw
             m_gui.EndFrame(m_renderer);
         }

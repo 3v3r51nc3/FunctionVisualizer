@@ -7,9 +7,9 @@ quadColor 0.000000 0.000000 1.000000 0.800000
 quadBorderColor 0.000000 0.000000 1.000000 0.800000
 fourierColor 0.632558 0.567889 0.458972 1.000000
 fourierRangeColor 0.694118 0.533333 0.952941 0.188235
-samples 2048
+samples 512
 gridSpacing 1
-gridScale 46
+gridScale 500
 fourierFunction true
 showFourierRange false
 fourierCenter 0.000000

@@ -33,6 +33,6 @@ private:
     ScaleAnimation m_scaleAnim;
 
     float  m_targetScale = 100.0f;
-    float m_scaleVel = 0.0f;   // spring velocity
+    float m_scaleVel = 0.0f;
     double m_prevTime = 0.0;
 };
