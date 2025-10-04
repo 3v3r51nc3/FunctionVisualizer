@@ -18,7 +18,7 @@ A Windows application that uses **Dear ImGui**, **DirectX9**, and **ExprTk** for
 
 ## 🖼️ Demo
 <p align="center">
-  <img src="docs/demo.gif" alt="demo" width="700"/>
+  <img src="docs/demo.png" alt="demo" width="700"/>
 </p>
 
 ---

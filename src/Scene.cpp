@@ -4,6 +4,7 @@
 #include <exprtk.hpp>
 #include <windows.h>
 #include <complex>
+#include "Fourier.h"
 
 static inline ImU32 RGBA(const ImVec4& c) {
     return IM_COL32(int(c.x * 255), int(c.y * 255), int(c.z * 255), int(c.w * 255));
@@ -112,7 +113,7 @@ void Scene::DrawFunction(const ImVec2& center, const ImVec2& windowSize, const A
 
     for (int i = 0; i < N; ++i) {
         float t = float(i) / float(N - 1);
-        float x = -nX + t * (2 * nX);   // sample across screen
+        float x = -nX + t * (2 * nX);
         float y = Eval(x);
 
         float sx = center.x + x * unit;
@@ -130,27 +131,23 @@ void Scene::DrawFourierTransform(const ImVec2& center,
     const ImVec2& windowSize,
     const AppConfig& cfg)
 {
-    // scales and constants
     const float unitScale = (cfg.gridScale > 0 ? cfg.gridSpacing * cfg.gridScale : cfg.gridSpacing);
-    const int   sampleCount = (cfg.samples > 2 ? cfg.samples : 2);
-    const double kPi = 3.14159265358979323846;
-    const double kTwoPi = 2.0 * kPi;
-
+    const int sampleCount = (cfg.samples > 2 ? cfg.samples : 2);
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
 
-    // screen <-> world helpers
     auto toScreen = [&](float worldX, float worldY) -> ImVec2 {
         return ImVec2(center.x + worldX * unitScale, center.y - worldY * unitScale);
         };
 
+    Fourier F(sampleCount);
+
     if (cfg.fourierDisplayMode == FOURIER_TRANSFORM)
     {
-        // selected bin window [binRangeMin..binRangeMax]
-        const float binRangeMin = cfg.fourierCenter - cfg.fourierRange;
-        const float binRangeMax = cfg.fourierCenter + cfg.fourierRange;
-
         if (cfg.showFourierRange)
         {
+            const float binRangeMin = cfg.fourierCenter - cfg.fourierRange;
+            const float binRangeMax = cfg.fourierCenter + cfg.fourierRange;
+
             const float bracketHeight = 1.0f;   // world units up/down from axis
             const float bracketPad = 0.5f;   // world units horizontal ticks
             const float bracketThickness = 4.0f;
@@ -173,76 +170,33 @@ void Scene::DrawFourierTransform(const ImVec2& center,
                 RGBA(cfg.fourierRangeColor), bracketThickness);
         }
 
-        // spectrum slice integrand plotted over i (normalized x in [0..1])
-        std::vector<ImVec2> points;
-        points.reserve(sampleCount);
+        auto spec = F.computeTransform([&](double x) { return Eval((float)x); },
+            cfg.fourierCenter, cfg.fourierRange, sampleCount);
 
-        // clamp bin range
-        int binStart = std::max(0, (int)std::floor(binRangeMin));
-        int binEnd = std::min(sampleCount - 1, (int)std::ceil(binRangeMax));
-        if (binEnd < binStart) std::swap(binStart, binEnd);
+        ImGui::Begin("Fourier Transform");
+        ImGui::Text("Samples: %d | Range: [%.3f, %.3f] rad/s | Max amplitude: %.4f",
+            sampleCount, -spec.wMax, spec.wMax, spec.maxAmp);
 
-        for (int i = 0; i < sampleCount; ++i)
-        {
-            const float  tNorm = (float)i / (float)(sampleCount - 1); // normalized 0..1
-            const float  worldX = tNorm;
-            const double sampleValue = (double)Eval(worldX);
+        const ImVec2 canvasSize(ImGui::GetContentRegionAvail().x, 260.0f);
+        ImGui::InvisibleButton("FourierCanvas", canvasSize);
+        ImVec2 p0 = ImGui::GetItemRectMin();
+        ImVec2 p1 = ImGui::GetItemRectMax();
+        ImDrawList* draw = ImGui::GetWindowDrawList();
+        draw->AddRectFilled(p0, p1, IM_COL32(25, 25, 25, 255));
+        draw->AddRect(p0, p1, IM_COL32(90, 90, 90, 255));
 
-            // twiddle base = exp(-j * 2π * i / N)
-            const double phaseStep = -kTwoPi * (double)i / (double)sampleCount;
-            const std::complex<double> twiddleBase(std::cos(phaseStep), std::sin(phaseStep));
-
-            // start at k = binStart: twiddle = twiddleBase^binStart
-            std::complex<double> twiddle = std::polar(1.0, phaseStep * (double)binStart);
-
-            std::complex<double> accumulator(0.0, 0.0);
-            for (int k = binStart; k <= binEnd; ++k) {
-                accumulator += sampleValue * twiddle; // s * exp(-j 2π k i / N)
-                twiddle *= twiddleBase;               // advance k
-            }
-
-            const int binsCount = std::max(1, binEnd - binStart + 1);
-            accumulator /= (double)binsCount;
-
-            float worldY =
-                (cfg.fourierMode == FOURIER_REAL) ? (float)accumulator.real() :
-                (cfg.fourierMode == FOURIER_IMAG) ? (float)accumulator.imag() :
-                (float)std::abs(accumulator);
-
-            points.emplace_back(toScreen(worldX, worldY));
-        }
-
-        for (int i = 1; i < sampleCount; ++i)
-            drawList->AddLine(points[i - 1], points[i], RGBA(cfg.fourierColor), 2.0f);
+        F.renderTransform(spec, p0, p1, draw, RGBA(cfg.fourierColor));
+        ImGui::End();
     }
     else // FOURIER_MODULATED_SIGNAL
     {
-        std::vector<ImVec2> points;
-        points.reserve(sampleCount);
+        int halfSpanUnits = int(windowSize.x / unitScale) + 1;
+        float worldXMin = (float)-halfSpanUnits;
+        float worldXMax = (float)+halfSpanUnits;
 
-        // cover visible world-X across the window
-        const int   halfSpanUnits = int(windowSize.x / unitScale) + 1;
-        const float worldXMin = (float)-halfSpanUnits;
-        const float worldXMax = (float)+halfSpanUnits;
-
-        // specific bin = N/2 => exp(-j*pi*i) = (-1)^i (fast path)
-        bool flip = false; // (-1)^i
-
-        for (int i = 0; i < sampleCount; ++i)
-        {
-            const float tNorm = (float)i / (float)(sampleCount - 1);     // 0..1
-            const float worldX = worldXMin + tNorm * (worldXMax - worldXMin);
-
-            float carrier =
-                (cfg.fourierMode == FOURIER_REAL) ? (flip ? -1.0f : 1.0f) :
-                (cfg.fourierMode == FOURIER_IMAG) ? 0.0f :
-                1.0f; // magnitude of exp() is 1
-
-            const float worldY = (float)Eval(worldX) * carrier;
-
-            points.emplace_back(toScreen(worldX, worldY));
-            flip = !flip;
-        }
+        auto points = F.computeModulatedPoints(sampleCount, worldXMin, worldXMax,
+            [&](double x) { return Eval((float)x); },
+            cfg.fourierMode, toScreen);
 
         for (int i = 1; i < sampleCount; ++i)
             drawList->AddLine(points[i - 1], points[i], RGBA(cfg.fourierColor), 2.0f);

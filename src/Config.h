@@ -1,20 +1,14 @@
 #pragma once
 #include <imgui/imgui.h>
 #include <string>
+#include "Fourier.h"
 
 class Scene;
-
-enum FourierMode {
-    FOURIER_MAG = 0,
-    FOURIER_REAL,
-    FOURIER_IMAG,
-};
 
 enum FourierDisplay {
     FOURIER_TRANSFORM = 0,
     FOURIER_MODULATED_SIGNAL,
 };
-
 
 struct AppConfig {
     ImVec4 funcColor = ImVec4(80 / 255.f, 160 / 255.f, 255 / 255.f, 255 / 255.f);

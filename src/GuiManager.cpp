@@ -54,8 +54,7 @@ void GuiManager::ShowMainMenu(AppConfig& cfg, Scene& scene) {
         ImGui::BeginDisabled(!cfg.fourierFunction);
 
         ImGui::ColorEdit4("Spectrum color", (float*)&cfg.fourierColor);
-        const char* comp[] = { "Magnitude", "Real","Imaginary"};
-        ImGui::Combo("Component", &cfg.fourierMode, comp, IM_ARRAYSIZE(comp));
+
         static const char* kFourierComponentHint =
             "Component - choose what to display\n"
             "- Magnitude abs(X[k]): default. Amplitude/energy per frequency. Best for peak reading.\n"
@@ -68,18 +67,20 @@ void GuiManager::ShowMainMenu(AppConfig& cfg, Scene& scene) {
         HelpMarker(kFourierComponentHint);
         const char* disp[] = { "Transform","Modulated signal" };
         ImGui::Combo("Display", &cfg.fourierDisplayMode, disp, IM_ARRAYSIZE(disp));
+            
+        const char* comp[] = { "Magnitude", "Real","Imaginary" };
+        if (cfg.fourierDisplayMode == FOURIER_MODULATED_SIGNAL) ImGui::Combo("Component", &cfg.fourierMode, comp, IM_ARRAYSIZE(comp));
 
         if (cfg.fourierDisplayMode == FOURIER_TRANSFORM) {
             ImGui::Checkbox("Show range", &cfg.showFourierRange);
             if (cfg.showFourierRange) {
                 ImGui::ColorEdit4("Range color", (float*)&cfg.fourierRangeColor);
-
-                // Center frequency (k0)
-                ImGui::DragFloat("Center (k₀)", &cfg.fourierCenter, 1.0f, 0.0f, (float)(cfg.samples / 2), "%.1f");
-
-                // Frequency range (± around center)
-                ImGui::DragFloat("Range (Δk)", &cfg.fourierRange, 1.0f, 0.0f, (float)(cfg.samples / 2), "%.1f");
             }
+            // Center frequency (k0)
+            ImGui::DragFloat("Center (k₀)", &cfg.fourierCenter, 0.01f, 0.0f, (float)(cfg.samples / 2), "%.3f");
+
+            // Frequency range (± around center)
+            ImGui::DragFloat("Range (Δk)", &cfg.fourierRange, 0.01f, 0.0f, (float)(cfg.samples / 2), "%.3f");
         }
         ImGui::EndDisabled();
     }
